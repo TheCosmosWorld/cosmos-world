@@ -1,4 +1,6 @@
+// src/TransactionTable.js
 import React, { useEffect, useState, useCallback } from "react";
+import Pusher from 'pusher-js';
 
 type Transaction = {
   signature: string;
@@ -9,96 +11,160 @@ type Transaction = {
   to: string;
 };
 
-interface HistoryRowProps {
-  signature: string;
-  time: string;
-  type: string;
-  amount: number;
-  from: string;
-  to: string;
-}
+// Static cache for transactions
+let transactionsCache: Transaction[] = [];
 
-function History() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPolling, setIsPolling] = useState(false);
+const RecentInputs = () => {
+  const [transactions, setTransactions] = useState<Transaction[]>(transactionsCache);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchTransactions = useCallback(async (isInitial = false) => {
+  // Initialize Pusher outside of useState to handle potential initialization errors
+  const initializePusher = useCallback(() => {
     try {
-      if (isInitial) {
-        setIsLoading(true);
-      } else {
-        setIsPolling(true);
+      const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
+      const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+
+      if (!key || !cluster) {
+        throw new Error('Pusher configuration missing');
       }
+
+      console.log('🔧 Initializing Pusher with:', { key, cluster });
+      
+      return new Pusher(key, {
+        cluster,
+        forceTLS: true
+      });
+    } catch (err) {
+      console.error('Failed to initialize Pusher:', err);
+      setError('Failed to initialize real-time updates');
+      return null;
+    }
+  }, []);
+
+  const [pusher] = useState(initializePusher);
+
+  const fetchInitialTransactions = useCallback(async () => {
+    if (transactionsCache.length > 0) {
+      setTransactions(transactionsCache);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/transactions');
+      const response = await fetch('/api/transactions?type=recent');
       if (!response.ok) {
         throw new Error(
           `Failed to fetch transactions: ${response.status} ${response.statusText}`
         );
       }
       const data = await response.json();
+      transactionsCache = data;
       setTransactions(data);
-      setRetryCount(0); // Reset retry count on successful fetch
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error fetching initial transactions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setError(`Failed to load transactions: ${errorMessage}`);
-      
-      // Increment retry count
-      setRetryCount((prev) => prev + 1);
     } finally {
       setIsLoading(false);
-      setIsPolling(false);
     }
   }, []);
 
   useEffect(() => {
-    // Initial fetch
-    fetchTransactions(true);
-
-    // Set up polling with exponential backoff
-    const pollInterval = Math.min(5000 * Math.pow(1.5, retryCount), 30000); // Reduced exponential factor
-    const maxRetries = 5; // Maximum number of retries
-
-    let interval: NodeJS.Timeout;
-    if (retryCount < maxRetries) {
-      interval = setInterval(() => {
-        fetchTransactions(false);
-      }, pollInterval);
-    } else {
-      console.log('🛑 Maximum retries reached, stopping polling');
+    if (!pusher) {
+      console.error('❌ Pusher not initialized');
+      return;
     }
 
+    // Initialize Pusher with debug logging
+    Pusher.logToConsole = true;
+    console.log('🚀 Initializing Pusher connection');
+
+    // Subscribe to the transactions channel
+    console.log('📡 Subscribing to transactions channel');
+    const channel = pusher.subscribe('transactions');
+    
+    // Handle connection state
+    pusher.connection.bind('connected', () => {
+      console.log('🔌 Pusher connected');
+      setIsConnected(true);
+      setError(null);
+    });
+
+    pusher.connection.bind('connecting', () => {
+      console.log('🔄 Pusher connecting...');
+    });
+
+    pusher.connection.bind('disconnected', () => {
+      console.log('🔌 Pusher disconnected');
+      setIsConnected(false);
+    });
+
+    pusher.connection.bind('error', (err: Error) => {
+      console.error('❌ Pusher error:', err);
+      setError('Connection error occurred');
+    });
+
+    // Listen for new transactions
+    channel.bind('new-transaction', (transaction: Transaction) => {
+      console.log('📥 New transaction received:', transaction);
+      transactionsCache = [transaction, ...transactionsCache].slice(0, 50);
+      setTransactions(transactionsCache);
+    });
+
+    // Fetch initial transactions
+    fetchInitialTransactions();
+
+    // Cleanup function
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      if (pusher) {
+        channel.unbind_all();
+        pusher.unsubscribe('transactions');
       }
     };
-  }, [fetchTransactions, retryCount]);
+  }, [fetchInitialTransactions, pusher]);
 
   const formatTime = useCallback((timestamp: number) => {
     try {
       const now = Date.now();
       const diff = now - timestamp * 1000;
-      const minutes = Math.floor(diff / 60000);
+      const seconds = Math.floor(diff / 1000);
       
-      if (minutes < 1) return 'Just now';
-      if (minutes === 1) return '1m ago';
-      if (minutes < 60) return `${minutes}m ago`;
+      if (seconds < 60) return 'Just now';
+      
+      const minutes = Math.floor(seconds / 60);
+      if (minutes === 1) return '1 minute ago';
+      if (minutes < 60) return `${minutes} minutes ago`;
       
       const hours = Math.floor(minutes / 60);
-      if (hours === 1) return '1h ago';
-      if (hours < 24) return `${hours}h ago`;
+      if (hours === 1) return '1 hour ago';
+      if (hours < 24) return `${hours} hours ago`;
+      
+      const days = Math.floor(hours / 24);
+      if (days === 1) return '1 day ago';
+      if (days < 7) return `${days} days ago`;
       
       return new Date(timestamp * 1000).toLocaleDateString();
     } catch (error) {
       console.error('Error formatting time:', error);
       return 'Invalid time';
     }
+  }, []);
+
+  const openInExplorer = useCallback((signature: string) => {
+    window.open(`https://solscan.io/tx/${signature}`, '_blank');
+  }, []);
+
+  // Update times every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTransactions([...transactionsCache]); // Force re-render to update times
+    }, 60000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const shortenAddress = useCallback((address: string) => {
@@ -120,47 +186,6 @@ function History() {
     }
   }, []);
 
-  const openInExplorer = useCallback((signature: string) => {
-    window.open(`https://solscan.io/tx/${signature}`, '_blank');
-  }, []);
-
-  const HistoryRow = ({ signature, time, type, amount, from, to }: HistoryRowProps) => {
-    return (
-      <div 
-        className="flex flex-col py-3 px-4 bg-white-0.05 rounded-lg hover:bg-white-0.09 transition-colors cursor-pointer"
-        onClick={() => openInExplorer(signature)}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <h3 className="tracking-[2.5%] text-xl leading-5 text-white font-semibold">
-              {shortenAddress(signature)}
-            </h3>
-            <span className="px-2 py-1 rounded-full bg-white-0.09 text-sm text-white-0.7">
-              {type || 'Unknown'}
-            </span>
-          </div>
-          <span className="tracking-[2.5%] text-sm text-white-0.4">
-            {time}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="text-sm text-white-0.4">From</span>
-            <span className="text-white">{shortenAddress(from)}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-sm text-white-0.4">To</span>
-            <span className="text-white">{shortenAddress(to)}</span>
-          </div>
-          <div className="flex flex-col gap-1 items-end">
-            <span className="text-sm text-white-0.4">Amount</span>
-            <span className="text-white font-semibold">{formatAmount(amount)}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-48">
@@ -173,20 +198,8 @@ function History() {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-white">
         <p className="text-red-400 mb-4">{error}</p>
-        {retryCount > 0 && retryCount < 5 ? (
-          <p className="text-white-0.4 text-sm mb-4">
-            Retrying in {Math.min(5 * Math.pow(1.5, retryCount), 30)} seconds...
-          </p>
-        ) : retryCount >= 5 ? (
-          <p className="text-white-0.4 text-sm mb-4">
-            Maximum retries reached. Please try again later or contact support.
-          </p>
-        ) : null}
         <button 
-          onClick={() => {
-            setRetryCount(0);
-            fetchTransactions(true);
-          }}
+          onClick={fetchInitialTransactions}
           className="px-4 py-2 bg-white-0.1 rounded-lg hover:bg-white-0.2 transition-colors"
         >
           Try Again
@@ -196,37 +209,75 @@ function History() {
   }
 
   return (
-    <div className="flex flex-col gap-2 relative p-2">
-      {isPolling && (
-        <div className="absolute top-2 right-4 z-10">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+    <div className="p-2">
+      <div className="overflow-x-auto relative">
+        {!isConnected && (
+          <div className="absolute top-0 right-0 mr-4 mt-2 z-10">
+            <div className="px-2 py-1 bg-yellow-500 text-black text-sm rounded-full">
+              Reconnecting...
+            </div>
           </div>
-        </div>
-      )}
-      <div className="h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-        {transactions.length === 0 ? (
-          <div className="text-center py-8 text-white-0.4">
-            No transactions yet
-          </div>
-        ) : (
-          transactions.map((transaction) => (
-            <HistoryRow
-              key={transaction.signature}
-              signature={transaction.signature}
-              time={formatTime(transaction.timestamp)}
-              type={transaction.type}
-              amount={transaction.amount}
-              from={transaction.from}
-              to={transaction.to}
-            />
-          ))
         )}
+        <div className="h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+          <table className="w-full">
+            <thead className="sticky top-0 bg-tabs-bg z-10">
+              <tr className="text-white tracking-[2.5%] text-sm">
+                <th scope="col" className="text-left pl-4 py-2">
+                  Time
+                </th>
+                <th scope="col" className="text-left py-2">
+                  From
+                </th>
+                <th scope="col" className="text-left py-2">
+                  To
+                </th>
+                <th scope="col" className="text-right pr-4 py-2">
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-white-0.4">
+                    No transactions yet
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((transaction) => (
+                  <tr 
+                    key={transaction.signature} 
+                    className="text-white tracking-[2.5%] text-sm hover:bg-white-0.05 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => openInExplorer(transaction.signature)}
+                  >
+                    <td className="pl-4 py-3">
+                      <div className="flex flex-col">
+                        <span>{formatTime(transaction.timestamp)}</span>
+                        <span className="text-white-0.4 text-xs">{transaction.type || 'Unknown'}</span>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <span className="px-2 py-1 rounded-[100px] bg-white-0.09">
+                        {shortenAddress(transaction.from)}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className="px-2 py-1 rounded-[100px] bg-white-0.09">
+                        {shortenAddress(transaction.to)}
+                      </span>
+                    </td>
+                    <td className="text-right py-3 pr-4 font-semibold">
+                      {formatAmount(transaction.amount)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
-}
+};
 
-export default History;
+export default RecentInputs;
