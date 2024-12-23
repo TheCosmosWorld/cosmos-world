@@ -154,6 +154,10 @@ const RecentInputs = () => {
     }
   }, []);
 
+  const openInExplorer = useCallback((signature: string) => {
+    window.open(`https://solscan.io/tx/${signature}`, '_blank');
+  }, []);
+
   // Update times every minute
   useEffect(() => {
     const interval = setInterval(() => {
@@ -243,7 +247,8 @@ const RecentInputs = () => {
                 transactions.map((transaction) => (
                   <tr 
                     key={transaction.signature} 
-                    className="text-white tracking-[2.5%] text-sm hover:bg-white-0.05 rounded-lg transition-colors"
+                    className="text-white tracking-[2.5%] text-sm hover:bg-white-0.05 rounded-lg transition-colors cursor-pointer"
+                    onClick={() => openInExplorer(transaction.signature)}
                   >
                     <td className="pl-4 py-3">
                       <div className="flex flex-col">
