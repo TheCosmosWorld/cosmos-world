@@ -120,9 +120,16 @@ function History() {
     }
   }, []);
 
+  const openInExplorer = useCallback((signature: string) => {
+    window.open(`https://solscan.io/tx/${signature}`, '_blank');
+  }, []);
+
   const HistoryRow = ({ signature, time, type, amount, from, to }: HistoryRowProps) => {
     return (
-      <div className="flex flex-col py-3 px-4 bg-white-0.05 rounded-lg hover:bg-white-0.09 transition-colors">
+      <div 
+        className="flex flex-col py-3 px-4 bg-white-0.05 rounded-lg hover:bg-white-0.09 transition-colors cursor-pointer"
+        onClick={() => openInExplorer(signature)}
+      >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <h3 className="tracking-[2.5%] text-xl leading-5 text-white font-semibold">
