@@ -19,9 +19,31 @@ const RecentInputs = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pusher] = useState(() => new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-    cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-  }));
+
+  // Initialize Pusher outside of useState to handle potential initialization errors
+  const initializePusher = useCallback(() => {
+    try {
+      const key = process.env.NEXT_PUBLIC_PUSHER_KEY;
+      const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+
+      if (!key || !cluster) {
+        throw new Error('Pusher configuration missing');
+      }
+
+      console.log('🔧 Initializing Pusher with:', { key, cluster });
+      
+      return new Pusher(key, {
+        cluster,
+        forceTLS: true
+      });
+    } catch (err) {
+      console.error('Failed to initialize Pusher:', err);
+      setError('Failed to initialize real-time updates');
+      return null;
+    }
+  }, []);
+
+  const [pusher] = useState(initializePusher);
 
   const fetchInitialTransactions = useCallback(async () => {
     if (transactionsCache.length > 0) {
@@ -52,6 +74,11 @@ const RecentInputs = () => {
   }, []);
 
   useEffect(() => {
+    if (!pusher) {
+      console.error('❌ Pusher not initialized');
+      return;
+    }
+
     // Initialize Pusher with debug logging
     Pusher.logToConsole = true;
     console.log('🚀 Initializing Pusher connection');
@@ -93,8 +120,10 @@ const RecentInputs = () => {
 
     // Cleanup function
     return () => {
-      channel.unbind_all();
-      pusher.unsubscribe('transactions');
+      if (pusher) {
+        channel.unbind_all();
+        pusher.unsubscribe('transactions');
+      }
     };
   }, [fetchInitialTransactions, pusher]);
 
