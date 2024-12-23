@@ -2,7 +2,7 @@
 
 # 🌌 COSMOS
 
-<img src="/logo.jpg" alt="COSMOS Banner" />
+<img src="/logo.jpg" alt="COSMOS Banner" width="300" />
 
 ### Where Blockchain Meets the Universe
 
