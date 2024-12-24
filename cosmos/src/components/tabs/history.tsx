@@ -127,7 +127,7 @@ function History() {
   const HistoryRow = ({ signature, time, type, amount, from, to }: HistoryRowProps) => {
     return (
       <div 
-        className="flex flex-col py-3 px-4 bg-white-0.05 rounded-lg hover:bg-white-0.09 transition-colors cursor-pointer"
+        className="flex flex-col py-3 px-4 bg-white-0.05 rounded-lg hover:bg-white-0.09 transition-colors cursor-pointer mb-1"
         onClick={() => openInExplorer(signature)}
       >
         <div className="flex items-center justify-between mb-2">

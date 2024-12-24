@@ -221,7 +221,7 @@ const RecentInputs = () => {
         <div className="h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           <table className="w-full">
             <thead className="sticky top-0 bg-tabs-bg z-10">
-              <tr className="text-white tracking-[2.5%] text-sm">
+              <tr className="font-bold text-white tracking-[2.5%] text-xl leading-5">
                 <th scope="col" className="text-left pl-4 py-2">
                   Time
                 </th>

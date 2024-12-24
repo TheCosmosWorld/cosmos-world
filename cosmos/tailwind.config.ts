@@ -2,6 +2,8 @@ import type { Config } from "tailwindcss";
 
 const cosmosColors = {
   "base-black": "rgba(7, 7, 9, 1)",
+  "black-0.1": "rgba(5, 5, 5, 0.1)",
+  "black-1": "rgba(5, 5, 5, 1)",
   "white-0.1": "rgba(255, 255, 255, 0.1)",
   "white-0.4": "rgba(255, 255, 255, 0.4)",
   "white-0.7": "rgba(255, 255, 255, 0.7)",
@@ -28,10 +30,12 @@ export default {
       },
       backdropBlur: {
         'footer-link': "16px",
-        'tabs-body': "300px"
+        'tabs-body': "300px",
+        'modal': "8px",
       },
       animation: {
         'spin-slow': 'spin 55s linear infinite',
+        'spin-slow-reverse': 'spin 50s reverse infinite',
       }
     },
   },
