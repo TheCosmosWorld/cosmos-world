@@ -49,6 +49,14 @@ function Footer() {
           >
             how it works
           </button>
+          <Link href="https://t.me/cosmos_world_bot" target="_blank">
+          <div
+            className="rounded-[100px] bg-white-0.1 backdrop-blur-footer-link font-semibold text-white uppercase tracking-[2.5%] text-xl leading-5 p-3 w-full max-w-[157px]"
+          >
+            The Cosmic Magic
+          </div>
+          </Link>
+
         </div>
         <div className="flex gap-2">
           <Link href="https://t.me/CosmosOnSol" target="_blank">
