@@ -50,6 +50,7 @@ function Modal({ isOpen, onClose, content }: ModalProps) {
                   width={1440}
                   height={1037.19}
                   alt="Stars"
+                  priority
                 />
               </div>
             </motion.div>

@@ -4,10 +4,16 @@ import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NarrationSound from "@/components/narration-sound";
+import MultipleVideosLoop from "@/components/multiple-video-loop";
+import Head from "next/head";
 
 export default function Home() {
   const [showLanding, setShowLanding] = useState(true);
   const [animateScreen, setAnimateScreen] = useState(false);
+  const planetVideos = [
+    "/assets/videos/SolarSystemLooped.mp4",
+    "/assets/videos/CryptoSpacelooped.mp4",
+  ];
 
   const handleClick = () => {
     setAnimateScreen(true);
@@ -62,7 +68,7 @@ export default function Home() {
     return (
       <div className="relative z-[1] min-h-screen overflow-hidden">
         <div className="flex justify-between pt-10 px-10 relative z-[2]">
-          <div>
+          <div className="h-fit">
             <Image
               src="/assets/svgs/logo.svg"
               width={126.74}
@@ -77,17 +83,9 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.2 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="absolute top-0 z-0 overflow-hidden"
+          className="absolute top-0 z-0 w-full h-full overflow-hidden"
         >
-          <video
-            src="/assets/videos/planetanimation.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            width="100%"
-            height="100%"
-          />
+          <MultipleVideosLoop videos={planetVideos} />
         </motion.div>
         <NarrationSound playSound={!showLanding} />
         <div className="absolute bottom-0 right-0 left-0 w-full">
@@ -98,64 +96,77 @@ export default function Home() {
   };
 
   return (
-    <div className="bg-[#010103] min-h-screen">
-      {renderView()}
-      <motion.div
-        initial={{ opacity: 0, scale: 1 }}
-        animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
-        exit={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 2.5 }}
-        className="fixed top-0 animate-spin-slow z-0"
-      >
-        <Image
-          src="/assets/svgs/stars-bg.svg"
-          width={1440}
-          height={1037.19}
-          alt="Stars"
+    <>
+      <Head>
+        <title key="title">Cosmos</title>
+        <meta
+          name="description"
+          content="Discover Cosmos' ground-breaking combination of blockchain technology with celestial artwork, where each transaction gives a virtual solar system life. We at Cosmos have developed a novel neural network that converts blockchain activity into captivating astronomical motions."
         />
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, scale: 1 }}
-        animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
-        exit={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 2.5 }}
-        className="fixed top-0 animate-spin-slow-reverse z-0"
-      >
-        <Image
-          src="/assets/svgs/stars-bg.svg"
-          width={1440}
-          height={1037.19}
-          alt="Stars"
-        />
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, scale: 1 }}
-        animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
-        exit={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 2.5 }}
-        className="fixed top-0 animate-spin-slow-reverse z-0"
-      >
-        <Image
-          src="/assets/svgs/stars-bg.svg"
-          width={1440}
-          height={1037.19}
-          alt="Stars"
-        />
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, scale: 1 }}
-        animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
-        exit={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 2.5 }}
-        className="fixed top-0 animate-spin-slow z-0"
-      >
-        <Image
-          src="/assets/svgs/stars-bg.svg"
-          width={1440}
-          height={1037.19}
-          alt="Stars"
-        />
-      </motion.div>
-    </div>
+      </Head>
+      <div className="bg-[#010103] min-h-screen">
+        {renderView()}
+        <motion.div
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
+          exit={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 2.5 }}
+          className="fixed top-0 animate-spin-slow z-0"
+        >
+          <Image
+            src="/assets/svgs/stars-bg.svg"
+            width={1440}
+            height={1037.19}
+            alt="Stars"
+            priority
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
+          exit={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 2.5 }}
+          className="fixed top-0 animate-spin-slow-reverse z-0"
+        >
+          <Image
+            src="/assets/svgs/stars-bg.svg"
+            width={1440}
+            height={1037.19}
+            alt="Stars"
+            priority
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
+          exit={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 2.5 }}
+          className="fixed top-0 animate-spin-slow-reverse z-0"
+        >
+          <Image
+            src="/assets/svgs/stars-bg.svg"
+            width={1440}
+            height={1037.19}
+            alt="Stars"
+            priority
+          />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
+          exit={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 2.5 }}
+          className="fixed top-0 animate-spin-slow z-0"
+        >
+          <Image
+            src="/assets/svgs/stars-bg.svg"
+            width={1440}
+            height={1037.19}
+            alt="Stars"
+            priority
+          />
+        </motion.div>
+      </div>
+    </>
   );
 }
