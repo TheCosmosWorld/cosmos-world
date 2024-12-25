@@ -1,11 +1,12 @@
+/* eslint-disable @next/next/no-img-element */
 import Footer from "@/components/footer";
 import Tabs from "@/components/tabs";
 import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import NarrationSound from "@/components/narration-sound";
-import MultipleVideosLoop from "@/components/multiple-video-loop";
 import Head from "next/head";
+import VideoPlayer from "@/components/video-player";
 
 export default function Home() {
   const [showLanding, setShowLanding] = useState(true);
@@ -31,7 +32,7 @@ export default function Home() {
     if (showLanding) {
       return (
         <AnimatePresence>
-          <div className="relative z-[1]">
+          <div className="relative z-[1] h-full">
             <div className="pt-16">
               <Image
                 src="/assets/svgs/logo.svg"
@@ -67,8 +68,8 @@ export default function Home() {
 
     return (
       <div className="relative z-[1] min-h-screen overflow-hidden">
-        <div className="flex justify-between pt-10 px-10 relative z-[2]">
-          <div className="h-fit">
+        <div className="flex flex-col items-center justify-between pt-10 px-10 relative z-[2] md:flex-row md:items-start">
+          <div className="h-fit mb-9 md:mb-0">
             <Image
               src="/assets/svgs/logo.svg"
               width={126.74}
@@ -79,15 +80,18 @@ export default function Home() {
           </div>
           <Tabs />
         </div>
-        <MultipleVideosLoop videos={planetVideos} />
+        <VideoPlayer
+          demoVideo="/assets/videos/CryptoSpacelooped.mp4"
+          loopVideo="/assets/videos/SolarSystemLooped.mp4"
+        />
         <motion.div
           initial={{ opacity: 0, scale: 0.2 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="absolute top-0 z-0 overflow-hidden hidden"
+          className="justify-center items-center fixed top-0 bottom-0 h-full w-full left-0 right-0 z-0 overflow-hidden hidden md:absolute"
         >
           <video
-            src="/assets/videos/CryptoSpacelooped.mp4"
+            src="/assets/videos/SolarSystemLooped.mp4"
             autoPlay
             muted
             loop
@@ -97,7 +101,7 @@ export default function Home() {
           />
         </motion.div>
         <NarrationSound playSound={!showLanding} />
-        <div className="absolute bottom-0 right-0 left-0 w-full">
+        <div className="bottom-0 right-0 left-0 w-full md:absolute">
           <Footer />
         </div>
       </div>
@@ -120,60 +124,36 @@ export default function Home() {
           animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
           exit={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2.5 }}
-          className="fixed top-0 animate-spin-slow z-0"
+          className="fixed top-0 w-full h-full animate-spin-slow z-0"
         >
-          <Image
-            src="/assets/svgs/stars-bg.svg"
-            width={1440}
-            height={1037.19}
-            alt="Stars"
-            priority
-          />
+          <img src="/assets/svgs/stars-bg.svg" alt="Stars" />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 1 }}
           animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
           exit={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2.5 }}
-          className="fixed top-0 animate-spin-slow-reverse z-0"
+          className="fixed top-0 w-full h-full animate-spin-slow-reverse z-0"
         >
-          <Image
-            src="/assets/svgs/stars-bg.svg"
-            width={1440}
-            height={1037.19}
-            alt="Stars"
-            priority
-          />
+          <img src="/assets/svgs/stars-bg.svg" alt="Stars" />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 1 }}
           animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
           exit={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2.5 }}
-          className="fixed top-0 animate-spin-slow-reverse z-0"
+          className="fixed top-0 w-full h-full animate-spin-slow-reverse z-0"
         >
-          <Image
-            src="/assets/svgs/stars-bg.svg"
-            width={1440}
-            height={1037.19}
-            alt="Stars"
-            priority
-          />
+          <img src="/assets/svgs/stars-bg.svg" alt="Stars" />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 1 }}
           animate={{ opacity: 1, scale: animateScreen ? 2.5 : 1 }}
           exit={{ opacity: 1, scale: 1 }}
           transition={{ duration: 2.5 }}
-          className="fixed top-0 animate-spin-slow z-0"
+          className="fixed top-0 w-full h-full animate-spin-slow z-0"
         >
-          <Image
-            src="/assets/svgs/stars-bg.svg"
-            width={1440}
-            height={1037.19}
-            alt="Stars"
-            priority
-          />
+          <img src="/assets/svgs/stars-bg.svg" alt="Stars" />
         </motion.div>
       </div>
     </>

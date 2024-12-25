@@ -21,7 +21,7 @@ function Modal({ isOpen, onClose, content }: ModalProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="p-8 rounded-2xl bg-black-1 w-full max-w-[486px] h-fit relative overflow-hidden"
+              className="p-8 rounded-2xl bg-black-1 w-full max-w-[350px] h-fit relative overflow-hidden md:max-w-[486px] "
             >
               <button
                 onClick={onClose}
@@ -38,7 +38,7 @@ function Modal({ isOpen, onClose, content }: ModalProps) {
                 <h2 className="text-[32px] leading-[38.4px] tracking-[2.5%] font-medium text-white uppercase">
                   {content?.title}
                 </h2>
-                <p className="text-xl leading-[24px] tracking-[2.5%] font-medium text-white-0.7 mt-6">
+                <p className="text-base tracking-[2.5%] font-medium text-white-0.7 mt-6 md:text-xl md:leading-[24px] ">
                   {content?.body}
                 </p>
               </div>

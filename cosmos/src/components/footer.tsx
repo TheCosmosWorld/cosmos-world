@@ -35,8 +35,8 @@ function Footer() {
 
   return (
     <>
-      <footer className="flex p-10 w-full justify-between items-center">
-        <div className="flex gap-2 w-full">
+      <footer className="flex flex-col p-10 w-full justify-between items-center gap-12 md:gap-0 md:flex-row">
+        <div className="flex flex-wrap gap-2 w-full justify-center md:justify-start md:flex-row md:flex-nowrap">
           <button
             onClick={handleAboutUsModal}
             className="rounded-[100px] bg-white-0.1 backdrop-blur-footer-link font-semibold text-white uppercase tracking-[2.5%] text-xl leading-5 p-3 w-full max-w-[157px]"
@@ -49,14 +49,13 @@ function Footer() {
           >
             how it works
           </button>
-          <Link href="https://t.me/cosmos_world_bot" target="_blank">
-          <div
-            className="rounded-[100px] bg-white-0.1 backdrop-blur-footer-link font-semibold text-white uppercase tracking-[2.5%] text-xl leading-5 p-3 w-full max-w-[157px]"
+          <Link
+            className="rounded-[100px] bg-white-0.1 backdrop-blur-footer-link font-semibold text-white uppercase tracking-[2.5%] text-xl leading-5 p-3 w-full max-w-[157px] text-center"
+            href="https://t.me/cosmos_world_bot"
+            target="_blank"
           >
             The Cosmic Magic
-          </div>
           </Link>
-
         </div>
         <div className="flex gap-2">
           <Link href="https://t.me/CosmosOnSol" target="_blank">
