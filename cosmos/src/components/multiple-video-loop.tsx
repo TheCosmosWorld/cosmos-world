@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 
 interface MultipleVideosLoop {
   videos: string[];
@@ -23,7 +24,7 @@ const MultipleVideosLoop = ({ videos }: MultipleVideosLoop) => {
           const nextVideo = (currentVideo + 1) % videos.length;
           setCurrentVideo(nextVideo);
           setIsTransitioning(false);
-        }, 90);
+        }, 101);
       };
 
       video.addEventListener("ended", handleVideoEnd);
@@ -40,26 +41,31 @@ const MultipleVideosLoop = ({ videos }: MultipleVideosLoop) => {
     }
   }, []);
 
-  return (
-    <div className="relative w-full h-full">
-      {videos.map((source, index) => (
-        <video
-          key={index}
-          ref={videoRefs.current[index]}
-          src={source}
-          className={`absolute top-0 left-0 w-full h-full transition-opacity duration-100 xl:object-cover 2xl:object-fill ${
-            currentVideo === index && !isTransitioning ? "opacity-100" : "opacity-0"
-          }`}
-          width="100%"
-          height="100%"
-          controls={false}
-          loop={false}
-          muted
-          playsInline
-        />
-      ))}
-    </div>
-  );
+  return videos.map((source, index) => (
+    <motion.div
+      key={index}
+      initial={{ opacity: 0, scale: currentVideo === 0 ? 0.2 : 1 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.8 }}
+      className="absolute top-0 z-0 overflow-hidden"
+    >
+      <video
+        ref={videoRefs.current[index]}
+        src={source}
+        className={`transition-opacity duration-100 ${
+          currentVideo === index && !isTransitioning
+            ? "opacity-100"
+            : "opacity-0"
+        }`}
+        width="100%"
+        height="100%"
+        controls={false}
+        loop={false}
+        muted
+        playsInline
+      />
+    </motion.div>
+  ));
 };
 
 export default MultipleVideosLoop;

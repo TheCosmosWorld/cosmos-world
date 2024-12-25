@@ -11,8 +11,8 @@ export default function Home() {
   const [showLanding, setShowLanding] = useState(true);
   const [animateScreen, setAnimateScreen] = useState(false);
   const planetVideos = [
-    "/assets/videos/SolarSystemLooped.mp4",
     "/assets/videos/CryptoSpacelooped.mp4",
+    "/assets/videos/SolarSystemLooped.mp4",
   ];
 
   const handleClick = () => {
@@ -79,13 +79,22 @@ export default function Home() {
           </div>
           <Tabs />
         </div>
+        <MultipleVideosLoop videos={planetVideos} />
         <motion.div
           initial={{ opacity: 0, scale: 0.2 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="absolute top-0 z-0 w-full h-full overflow-hidden"
+          className="absolute top-0 z-0 overflow-hidden hidden"
         >
-          <MultipleVideosLoop videos={planetVideos} />
+          <video
+            src="/assets/videos/CryptoSpacelooped.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            width="100%"
+            height="100%"
+          />
         </motion.div>
         <NarrationSound playSound={!showLanding} />
         <div className="absolute bottom-0 right-0 left-0 w-full">
