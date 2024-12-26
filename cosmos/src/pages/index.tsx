@@ -11,10 +11,10 @@ import VideoPlayer from "@/components/video-player";
 export default function Home() {
   const [showLanding, setShowLanding] = useState(true);
   const [animateScreen, setAnimateScreen] = useState(false);
-  const planetVideos = [
-    "/assets/videos/CryptoSpacelooped.mp4",
-    "/assets/videos/SolarSystemLooped.mp4",
-  ];
+  // const planetVideos = [
+  //   "/assets/videos/CryptoSpacelooped.mp4",
+  //   "/assets/videos/SolarSystemLooped.mp4",
+  // ];
 
   const handleClick = () => {
     setAnimateScreen(true);
@@ -68,7 +68,12 @@ export default function Home() {
 
     return (
       <div className="relative z-[1] min-h-screen overflow-hidden">
-        <div className="flex flex-col items-center justify-between pt-10 px-10 relative z-[2] md:flex-row md:items-start">
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="flex flex-col items-center justify-between pt-10 px-10 relative z-[2] md:flex-row md:items-start"
+        >
           <div className="h-fit mb-9 md:mb-0">
             <Image
               src="/assets/svgs/logo.svg"
@@ -78,32 +83,31 @@ export default function Home() {
               className="mx-auto"
             />
           </div>
-          <Tabs />
-        </div>
+          <div className="hidden w-full max-w-[342px] md:block">
+            <Tabs />
+          </div>
+        </motion.div>
         <VideoPlayer
           demoVideo="/assets/videos/CryptoSpacelooped.mp4"
           loopVideo="/assets/videos/SolarSystemLooped.mp4"
         />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.2 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="justify-center items-center fixed top-0 bottom-0 h-full w-full left-0 right-0 z-0 overflow-hidden hidden md:absolute"
-        >
-          <video
-            src="/assets/videos/SolarSystemLooped.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            width="100%"
-            height="100%"
-          />
-        </motion.div>
-        <NarrationSound playSound={!showLanding} />
-        <div className="bottom-0 right-0 left-0 w-full md:absolute">
-          <Footer />
+        <VideoPlayer
+          demoVideo="/assets/videos/CryptoSpacelooped.mp4"
+          loopVideo="/assets/videos/SolarSystemLooped.mp4"
+          isMobile={true}
+        />
+        <div className="block mx-auto w-full px-4 max-w-[500px] md:hidden">
+          <Tabs />
         </div>
+        <NarrationSound playSound={!showLanding} />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="bottom-0 right-0 left-0 w-full md:absolute"
+        >
+          <Footer />
+        </motion.div>
       </div>
     );
   };

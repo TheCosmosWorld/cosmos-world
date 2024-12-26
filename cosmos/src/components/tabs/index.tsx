@@ -43,7 +43,7 @@ function Tabs() {
   };
 
   return (
-    <div className="max-w-[342px] w-full">
+    <div className="w-full">
       <div className="flex gap-2 mb-2 rounded-[100px] bg-white-0.05 p-1 w-full">
         <TabButton title="History" id="history" />
         <TabButton title="Recent Inputs" id="recent-inputs" />
