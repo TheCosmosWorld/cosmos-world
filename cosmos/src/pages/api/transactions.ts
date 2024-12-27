@@ -30,27 +30,69 @@ type Transaction = {
   to: string;
 };
 
+// Add cache for Helius responses
+let heliusCache: {
+  data: Transaction[];
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 60000; // 1 minute cache
+let requestCounter = 0;
+let lastResetTime = Date.now();
+
+// Reset counter every hour
+const resetCounterIfNeeded = () => {
+  const oneHour = 3600000;
+  if (Date.now() - lastResetTime > oneHour) {
+    console.log('📊 Resetting request counter. Previous hour:', requestCounter);
+    requestCounter = 0;
+    lastResetTime = Date.now();
+  }
+};
+
 async function fetchHeliusTransactions(): Promise<Transaction[]> {
+  resetCounterIfNeeded();
+  
+  console.log('🔑 Checking Helius credentials:', { 
+    hasApiKey: !!HELIUS_API_KEY, 
+    hasTokenAddress: !!TOKEN_ADDRESS,
+    hasCachedData: !!heliusCache,
+    requestsThisHour: requestCounter
+  });
+
+  // Return cached data if available and not expired
+  if (heliusCache && Date.now() - heliusCache.timestamp < CACHE_DURATION) {
+    console.log('📦 Returning cached Helius data');
+    return heliusCache.data;
+  }
+
   if (!HELIUS_API_KEY || !TOKEN_ADDRESS) {
     console.warn('⚠️ Missing Helius API key or token address, returning empty array');
     return [];
   }
 
   try {
+    requestCounter++;
+    console.log('📡 Fetching from Helius API... Request #', requestCounter);
     const response = await fetch(
       `https://api.helius.xyz/v0/addresses/${TOKEN_ADDRESS}/transactions?api-key=${HELIUS_API_KEY}&limit=50`
     );
 
+    if (response.status === 429) {
+      console.warn('⚠️ Rate limit hit, returning cached data if available');
+      return heliusCache?.data || [];
+    }
+
     if (!response.ok) {
       console.error(`❌ Helius API error: ${response.status} ${response.statusText}`);
-      return [];
+      return heliusCache?.data || [];
     }
 
     const data = await response.json() as HeliusTransaction[];
-    console.log('📥 Helius API response:', data);
+    console.log('📥 Helius API response:', { count: data.length });
 
     // Transform Helius data to match our transaction format
-    return data.map((event) => ({
+    const transformed = data.map((event) => ({
       signature: event.signature,
       timestamp: event.timestamp,
       amount: event.tokenTransfers?.[0]?.tokenAmount || 0,
@@ -58,14 +100,27 @@ async function fetchHeliusTransactions(): Promise<Transaction[]> {
       from: event.tokenTransfers?.[0]?.fromUserAccount || "",
       to: event.tokenTransfers?.[0]?.toUserAccount || "",
     }));
+
+    // Update cache
+    heliusCache = {
+      data: transformed,
+      timestamp: Date.now()
+    };
+
+    console.log('✅ Transformed transactions:', { count: transformed.length });
+    return transformed;
   } catch (error) {
     console.error('❌ Error fetching from Helius:', error);
-    return [];
+    return heliusCache?.data || [];
   }
 }
 
 export default async function handler(req: Request) {
-  console.log('📊 Transactions endpoint called');
+  console.log('📊 Transactions endpoint called', {
+    method: req.method,
+    url: req.url
+  });
+  
   const url = new URL(req.url);
   const type = url.searchParams.get('type');
 
@@ -82,6 +137,7 @@ export default async function handler(req: Request) {
   try {
     // Get webhook transactions (recent inputs)
     const webhookTransactions = getRecentTransactions();
+    console.log('📥 Webhook transactions:', { count: webhookTransactions.length });
 
     // If type is 'recent', only return webhook transactions
     if (type === 'recent') {
@@ -101,6 +157,7 @@ export default async function handler(req: Request) {
 
     // Otherwise, get transactions from both sources for history
     const heliusTransactions = await fetchHeliusTransactions();
+    console.log('📥 Helius transactions:', { count: heliusTransactions.length });
 
     // Combine and deduplicate transactions
     const allTransactions = [...webhookTransactions, ...heliusTransactions];
