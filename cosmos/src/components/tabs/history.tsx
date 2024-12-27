@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 
 type Transaction = {
   signature: string;
@@ -19,13 +19,27 @@ interface HistoryRowProps {
 }
 
 function History() {
+  console.log('🔄 History component rendered');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [requestCount, setRequestCount] = useState(0);
+  const lastRequestRef = useRef<number>(0);
 
   const fetchTransactions = useCallback(async (isInitial = false) => {
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestRef.current;
+    console.log('⏱️ Time since last request:', Math.round(timeSinceLastRequest / 1000), 'seconds');
+    
+    console.log('📡 Fetching transactions...', { 
+      isInitial, 
+      retryCount,
+      totalRequests: requestCount + 1,
+      pollInterval: Math.min(30000 * Math.pow(2, retryCount), 300000)
+    });
+
     try {
       if (isInitial) {
         setIsLoading(true);
@@ -33,18 +47,23 @@ function History() {
         setIsPolling(true);
       }
       setError(null);
+      lastRequestRef.current = now;
+      setRequestCount(prev => prev + 1);
 
       const response = await fetch('/api/transactions');
+      console.log('📥 API Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error(
           `Failed to fetch transactions: ${response.status} ${response.statusText}`
         );
       }
       const data = await response.json();
+      console.log('✅ Transactions received:', { count: data.length, data });
       setTransactions(data);
       setRetryCount(0); // Reset retry count on successful fetch
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('❌ Error fetching transactions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setError(`Failed to load transactions: ${errorMessage}`);
       
@@ -60,23 +79,35 @@ function History() {
     // Initial fetch
     fetchTransactions(true);
 
-    // Set up polling with exponential backoff
-    const pollInterval = Math.min(5000 * Math.pow(1.5, retryCount), 30000); // Reduced exponential factor
-    const maxRetries = 5; // Maximum number of retries
+    // Set up polling with longer intervals to avoid rate limits
+    const pollInterval = Math.min(30000 * Math.pow(2, retryCount), 300000); // 30 seconds base, max 5 minutes
+    const maxRetries = 3; // Reduced max retries
 
     let interval: NodeJS.Timeout;
     if (retryCount < maxRetries) {
       interval = setInterval(() => {
-        fetchTransactions(false);
+        // Only poll if the tab is visible
+        if (document.visibilityState === 'visible') {
+          fetchTransactions(false);
+        }
       }, pollInterval);
     } else {
       console.log('🛑 Maximum retries reached, stopping polling');
     }
 
+    // Listen for visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchTransactions(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       if (interval) {
         clearInterval(interval);
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchTransactions, retryCount]);
 
