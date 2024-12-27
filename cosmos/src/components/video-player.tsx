@@ -55,6 +55,8 @@ const VideoPlayer = ({
           muted
           playsInline
           autoPlay
+          width="100%"
+          height="100%"
         />
         <video
           ref={loopVideoRef}

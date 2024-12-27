@@ -88,12 +88,12 @@ export default function Home() {
           </div>
         </motion.div>
         <VideoPlayer
-          demoVideo="/assets/videos/CryptoSpacelooped.mp4"
-          loopVideo="/assets/videos/SolarSystemLooped.mp4"
+          demoVideo="/assets/videos/teaser.mp4"
+          loopVideo="/assets/videos/planetloop.mp4"
         />
         <VideoPlayer
-          demoVideo="/assets/videos/CryptoSpacelooped.mp4"
-          loopVideo="/assets/videos/SolarSystemLooped.mp4"
+          demoVideo="/assets/videos/teaser.mp4"
+          loopVideo="/assets/videos/planetloop.mp4"
           isMobile={true}
         />
         <div className="block mx-auto w-full px-4 max-w-[500px] md:hidden">
