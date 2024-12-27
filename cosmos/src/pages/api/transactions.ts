@@ -5,7 +5,7 @@ const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS;
 
 export const config = {
   runtime: 'edge',
-  regions: ['iad1'], // specify the region you want to deploy to
+  regions: ['iad1'],
 };
 
 type HeliusTokenTransfer = {
@@ -30,40 +30,53 @@ type Transaction = {
   to: string;
 };
 
-// Add cache for Helius responses
-let heliusCache: {
-  data: Transaction[];
-  timestamp: number;
-} | null = null;
-
+// Use Cache API instead of in-memory cache
+const CACHE_KEY = 'helius-transactions';
 const CACHE_DURATION = 60000; // 1 minute cache
-let requestCounter = 0;
-let lastResetTime = Date.now();
 
-// Reset counter every hour
-const resetCounterIfNeeded = () => {
-  const oneHour = 3600000;
-  if (Date.now() - lastResetTime > oneHour) {
-    console.log('📊 Resetting request counter. Previous hour:', requestCounter);
-    requestCounter = 0;
-    lastResetTime = Date.now();
+async function getCache(): Promise<{ data: Transaction[]; timestamp: number; } | null> {
+  try {
+    const cache = await caches.open('helius');
+    const response = await cache.match(CACHE_KEY);
+    if (response) {
+      const data = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error('❌ Error reading cache:', error);
   }
-};
+  return null;
+}
+
+async function setCache(data: Transaction[]) {
+  try {
+    const cache = await caches.open('helius');
+    const cacheData = {
+      data,
+      timestamp: Date.now()
+    };
+    await cache.put(
+      CACHE_KEY,
+      new Response(JSON.stringify(cacheData), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+  } catch (error) {
+    console.error('❌ Error writing cache:', error);
+  }
+}
 
 async function fetchHeliusTransactions(): Promise<Transaction[]> {
-  resetCounterIfNeeded();
-  
   console.log('🔑 Checking Helius credentials:', { 
     hasApiKey: !!HELIUS_API_KEY, 
-    hasTokenAddress: !!TOKEN_ADDRESS,
-    hasCachedData: !!heliusCache,
-    requestsThisHour: requestCounter
+    hasTokenAddress: !!TOKEN_ADDRESS
   });
 
-  // Return cached data if available and not expired
-  if (heliusCache && Date.now() - heliusCache.timestamp < CACHE_DURATION) {
+  // Check cache first
+  const cachedData = await getCache();
+  if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
     console.log('📦 Returning cached Helius data');
-    return heliusCache.data;
+    return cachedData.data;
   }
 
   if (!HELIUS_API_KEY || !TOKEN_ADDRESS) {
@@ -72,20 +85,19 @@ async function fetchHeliusTransactions(): Promise<Transaction[]> {
   }
 
   try {
-    requestCounter++;
-    console.log('📡 Fetching from Helius API... Request #', requestCounter);
+    console.log('📡 Fetching from Helius API...');
     const response = await fetch(
       `https://api.helius.xyz/v0/addresses/${TOKEN_ADDRESS}/transactions?api-key=${HELIUS_API_KEY}&limit=50`
     );
 
     if (response.status === 429) {
       console.warn('⚠️ Rate limit hit, returning cached data if available');
-      return heliusCache?.data || [];
+      return cachedData?.data || [];
     }
 
     if (!response.ok) {
       console.error(`❌ Helius API error: ${response.status} ${response.statusText}`);
-      return heliusCache?.data || [];
+      return cachedData?.data || [];
     }
 
     const data = await response.json() as HeliusTransaction[];
@@ -102,16 +114,13 @@ async function fetchHeliusTransactions(): Promise<Transaction[]> {
     }));
 
     // Update cache
-    heliusCache = {
-      data: transformed,
-      timestamp: Date.now()
-    };
+    await setCache(transformed);
 
     console.log('✅ Transformed transactions:', { count: transformed.length });
     return transformed;
   } catch (error) {
     console.error('❌ Error fetching from Helius:', error);
-    return heliusCache?.data || [];
+    return cachedData?.data || [];
   }
 }
 
