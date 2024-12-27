@@ -9,7 +9,7 @@
 [![Stars](https://img.shields.io/github/stars/TheCosmosWorld/cosmos-world?style=social)](https://github.com/TheCosmosWorld/cosmos-world/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[Explore Demo](http://your-demo-link.com) • [Documentation](http://your-docs-link.com) • [Join Community](http://your-community-link.com)
+[Explore](https://cosmosworld.io/) • [Documentation](http://your-docs-link.com) • [Join Community](http://your-community-link.com)
 
 </div>
 
