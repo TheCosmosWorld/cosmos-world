@@ -37,11 +37,12 @@ function History() {
       isInitial, 
       retryCount,
       totalRequests: requestCount + 1,
-      pollInterval: Math.min(30000 * Math.pow(2, retryCount), 300000)
+      pollInterval: Math.min(60000 * Math.pow(2, retryCount), 600000)
     });
 
     try {
-      if (isInitial) {
+      // Only show loading state on initial load if we don't have any data
+      if (isInitial && transactions.length === 0) {
         setIsLoading(true);
       } else {
         setIsPolling(true);
@@ -60,12 +61,22 @@ function History() {
       }
       const data = await response.json();
       console.log('✅ Transactions received:', { count: data.length, data });
-      setTransactions(data);
-      setRetryCount(0); // Reset retry count on successful fetch
+      
+      // Only update if we got new data
+      if (data.length > 0) {
+        setTransactions(data);
+        setRetryCount(0); // Reset retry count on successful fetch with data
+      } else if (transactions.length === 0) {
+        // Only set empty data if we don't have any existing data
+        setTransactions(data);
+      }
     } catch (error) {
       console.error('❌ Error fetching transactions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(`Failed to load transactions: ${errorMessage}`);
+      // Only show error if we don't have any data
+      if (transactions.length === 0) {
+        setError(`Failed to load transactions: ${errorMessage}`);
+      }
       
       // Increment retry count
       setRetryCount((prev) => prev + 1);
@@ -73,21 +84,22 @@ function History() {
       setIsLoading(false);
       setIsPolling(false);
     }
-  }, []);
+  }, [transactions.length]);
 
   useEffect(() => {
     // Initial fetch
     fetchTransactions(true);
 
-    // Set up polling with longer intervals to avoid rate limits
-    const pollInterval = Math.min(30000 * Math.pow(2, retryCount), 300000); // 30 seconds base, max 5 minutes
+    // Set up polling with much longer intervals to avoid rate limits
+    const pollInterval = Math.min(60000 * Math.pow(2, retryCount), 600000); // 1 minute base, max 10 minutes
     const maxRetries = 3; // Reduced max retries
 
     let interval: NodeJS.Timeout;
     if (retryCount < maxRetries) {
       interval = setInterval(() => {
-        // Only poll if the tab is visible
-        if (document.visibilityState === 'visible') {
+        // Only poll if the tab is visible and it's been at least 60 seconds since the last request
+        if (document.visibilityState === 'visible' && 
+            Date.now() - lastRequestRef.current >= 60000) {
           fetchTransactions(false);
         }
       }, pollInterval);
@@ -97,7 +109,8 @@ function History() {
 
     // Listen for visibility changes
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && 
+          Date.now() - lastRequestRef.current >= 60000) {
         fetchTransactions(false);
       }
     };
