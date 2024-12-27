@@ -30,58 +30,19 @@ type Transaction = {
   to: string;
 };
 
-// Use Cache API instead of in-memory cache
-const CACHE_KEY = 'helius-transactions';
-const CACHE_DURATION = 60000; // 1 minute cache
-
-async function getCache(): Promise<{ data: Transaction[]; timestamp: number; } | null> {
-  try {
-    const cache = await caches.open('helius');
-    const response = await cache.match(CACHE_KEY);
-    if (response) {
-      const data = await response.json();
-      return data;
-    }
-  } catch (error) {
-    console.error('❌ Error reading cache:', error);
-  }
-  return null;
-}
-
-async function setCache(data: Transaction[]) {
-  try {
-    const cache = await caches.open('helius');
-    const cacheData = {
-      data,
-      timestamp: Date.now()
-    };
-    await cache.put(
-      CACHE_KEY,
-      new Response(JSON.stringify(cacheData), {
-        headers: { 'Content-Type': 'application/json' }
-      })
-    );
-  } catch (error) {
-    console.error('❌ Error writing cache:', error);
-  }
-}
+// Keep track of last successful response
+let lastSuccessfulResponse: Transaction[] | null = null;
 
 async function fetchHeliusTransactions(): Promise<Transaction[]> {
   console.log('🔑 Checking Helius credentials:', { 
     hasApiKey: !!HELIUS_API_KEY, 
-    hasTokenAddress: !!TOKEN_ADDRESS
+    hasTokenAddress: !!TOKEN_ADDRESS,
+    hasLastSuccessfulData: !!lastSuccessfulResponse
   });
 
-  // Check cache first
-  const cachedData = await getCache();
-  if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
-    console.log('📦 Returning cached Helius data');
-    return cachedData.data;
-  }
-
   if (!HELIUS_API_KEY || !TOKEN_ADDRESS) {
-    console.warn('⚠️ Missing Helius API key or token address, returning empty array');
-    return [];
+    console.warn('⚠️ Missing Helius API key or token address, returning last known data or empty array');
+    return lastSuccessfulResponse || [];
   }
 
   try {
@@ -91,13 +52,13 @@ async function fetchHeliusTransactions(): Promise<Transaction[]> {
     );
 
     if (response.status === 429) {
-      console.warn('⚠️ Rate limit hit, returning cached data if available');
-      return cachedData?.data || [];
+      console.warn('⚠️ Rate limit hit, returning last known data');
+      return lastSuccessfulResponse || [];
     }
 
     if (!response.ok) {
       console.error(`❌ Helius API error: ${response.status} ${response.statusText}`);
-      return cachedData?.data || [];
+      return lastSuccessfulResponse || [];
     }
 
     const data = await response.json() as HeliusTransaction[];
@@ -113,14 +74,13 @@ async function fetchHeliusTransactions(): Promise<Transaction[]> {
       to: event.tokenTransfers?.[0]?.toUserAccount || "",
     }));
 
-    // Update cache
-    await setCache(transformed);
-
+    // Update last successful response
+    lastSuccessfulResponse = transformed;
     console.log('✅ Transformed transactions:', { count: transformed.length });
     return transformed;
   } catch (error) {
     console.error('❌ Error fetching from Helius:', error);
-    return cachedData?.data || [];
+    return lastSuccessfulResponse || [];
   }
 }
 
