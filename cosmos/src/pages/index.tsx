@@ -7,14 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import NarrationSound from "@/components/narration-sound";
 import Head from "next/head";
 import VideoPlayer from "@/components/video-player";
+import { useAppContext } from "@/contexts/app-context";
 
 export default function Home() {
   const [showLanding, setShowLanding] = useState(true);
   const [animateScreen, setAnimateScreen] = useState(false);
-  // const planetVideos = [
-  //   "/assets/videos/CryptoSpacelooped.mp4",
-  //   "/assets/videos/SolarSystemLooped.mp4",
-  // ];
+  const {isVideoLoading} = useAppContext()
+
 
   const handleClick = () => {
     setAnimateScreen(true);
@@ -99,7 +98,7 @@ export default function Home() {
         <div className="block mx-auto w-full px-4 max-w-[500px] md:hidden">
           <Tabs />
         </div>
-        <NarrationSound playSound={!showLanding} />
+        <NarrationSound playSound={!showLanding && !isVideoLoading} />
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

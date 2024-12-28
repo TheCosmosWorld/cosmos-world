@@ -1,3 +1,4 @@
+import { useAppContext } from "@/contexts/app-context";
 import React, { useEffect, useState, useCallback } from "react";
 
 
@@ -25,6 +26,7 @@ function History() {
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const { setPauseRotation } = useAppContext()
 
   const fetchTransactions = useCallback(async (isInitial = false) => {
     try {
@@ -37,17 +39,20 @@ function History() {
 
       const response = await fetch('/api/transactions');
       if (!response.ok) {
+        setPauseRotation(true)
         throw new Error(
           `Failed to fetch transactions: ${response.status} ${response.statusText}`
         );
       }
       const data = await response.json();
       setTransactions(data);
+      setPauseRotation(false)
       setRetryCount(0); // Reset retry count on successful fetch
     } catch (error) {
       console.error('Error fetching transactions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setError(`Failed to load transactions: ${errorMessage}`);
+      setPauseRotation(true)
       
       // Increment retry count
       setRetryCount((prev) => prev + 1);
@@ -55,7 +60,7 @@ function History() {
       setIsLoading(false);
       setIsPolling(false);
     }
-  }, []);
+  }, [setPauseRotation]);
 
   useEffect(() => {
     // Initial fetch

@@ -1,6 +1,7 @@
 // src/TransactionTable.js
 import React, { useEffect, useState, useCallback } from "react";
 import Pusher from 'pusher-js';
+import { useAppContext } from "@/contexts/app-context";
 
 type Transaction = {
   signature: string;
@@ -19,6 +20,7 @@ const RecentInputs = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setPauseRotation } = useAppContext()
 
   // Initialize Pusher outside of useState to handle potential initialization errors
   const initializePusher = useCallback(() => {
@@ -57,6 +59,7 @@ const RecentInputs = () => {
 
       const response = await fetch('/api/transactions?type=recent');
       if (!response.ok) {
+        setPauseRotation(true)
         throw new Error(
           `Failed to fetch transactions: ${response.status} ${response.statusText}`
         );
@@ -64,14 +67,16 @@ const RecentInputs = () => {
       const data = await response.json();
       transactionsCache = data;
       setTransactions(data);
+      setPauseRotation(false)
     } catch (error) {
       console.error('Error fetching initial transactions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setError(`Failed to load transactions: ${errorMessage}`);
+      setPauseRotation(true)
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setPauseRotation]);
 
   useEffect(() => {
     if (!pusher) {
