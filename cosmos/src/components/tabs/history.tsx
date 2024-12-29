@@ -27,6 +27,8 @@ function History() {
   const [retryCount, setRetryCount] = useState(0);
   const { setPauseRotation } = useAppContext();
 
+  console.log(transactions);
+
   const fetchTransactions = useCallback(
     async (isInitial = false) => {
       try {
@@ -44,14 +46,38 @@ function History() {
             `Failed to fetch transactions: ${response.status} ${response.statusText}`
           );
         }
+
         const data = await response.json();
         setTransactions(data);
-        setPauseRotation(false);
-        setRetryCount(0);
 
-        setTimeout(() => {
-          setPauseRotation(true);
-        }, 10000);
+        if (data.length > 0) {
+          // Find the object with the latest timestamp
+          const latestTransaction = data.reduce(
+            (latest: Transaction, transaction: Transaction) =>
+              latest.timestamp > transaction.timestamp ? latest : transaction
+          );
+
+
+
+          // Get the current time and the latest timestamp
+          const currentTime = Math.floor(Date.now() / 1000); // Convert current time to seconds
+          const latestTimestamp = latestTransaction?.timestamp;
+
+
+
+          // Check if the difference is within 15 minutes (900 seconds)
+          if (currentTime - latestTimestamp <= 900) {
+            setPauseRotation(false);
+          } else {
+            setPauseRotation(true);
+          }
+
+        }
+
+        setRetryCount(0);
+        // setTimeout(() => {
+        //   setPauseRotation(true);
+        // }, 20000);
       } catch (error) {
         console.error("Error fetching transactions:", error);
         const errorMessage =

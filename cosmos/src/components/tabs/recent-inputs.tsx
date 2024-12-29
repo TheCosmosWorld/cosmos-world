@@ -1,6 +1,6 @@
 // src/TransactionTable.js
 import React, { useEffect, useState, useCallback } from "react";
-import Pusher from 'pusher-js';
+import Pusher from "pusher-js";
 import { useAppContext } from "@/contexts/app-context";
 
 type Transaction = {
@@ -16,11 +16,12 @@ type Transaction = {
 let transactionsCache: Transaction[] = [];
 
 const RecentInputs = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>(transactionsCache);
+  const [transactions, setTransactions] =
+    useState<Transaction[]>(transactionsCache);
   const [isLoading, setIsLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setPauseRotation } = useAppContext()
+  const { setPauseRotation } = useAppContext();
 
   // Initialize Pusher outside of useState to handle potential initialization errors
   const initializePusher = useCallback(() => {
@@ -29,18 +30,18 @@ const RecentInputs = () => {
       const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
 
       if (!key || !cluster) {
-        throw new Error('Pusher configuration missing');
+        throw new Error("Pusher configuration missing");
       }
 
-      console.log('🔧 Initializing Pusher with:', { key, cluster });
-      
+      console.log("🔧 Initializing Pusher with:", { key, cluster });
+
       return new Pusher(key, {
         cluster,
-        forceTLS: true
+        forceTLS: true,
       });
     } catch (err) {
-      console.error('Failed to initialize Pusher:', err);
-      setError('Failed to initialize real-time updates');
+      console.error("Failed to initialize Pusher:", err);
+      setError("Failed to initialize real-time updates");
       return null;
     }
   }, []);
@@ -57,9 +58,9 @@ const RecentInputs = () => {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/transactions?type=recent');
+      const response = await fetch("/api/transactions?type=recent");
       if (!response.ok) {
-        setPauseRotation(true)
+        setPauseRotation(true);
         throw new Error(
           `Failed to fetch transactions: ${response.status} ${response.statusText}`
         );
@@ -67,17 +68,35 @@ const RecentInputs = () => {
       const data = await response.json();
       transactionsCache = data;
       setTransactions(data);
-      setPauseRotation(false);
 
-      setTimeout(() => {
-        setPauseRotation(true);
-      }, 10000);
+      
+      if (transactionsCache.length > 0) {
+        // Find the object with the latest timestamp
+        const latestTransaction = transactionsCache.reduce(
+          (latest, transaction) =>
+            latest.timestamp > transaction.timestamp ? latest : transaction
+        );
 
+        // Get the current time and the latest timestamp
+        const currentTime = Math.floor(Date.now() / 1000); // Convert current time to seconds
+        const latestTimestamp = latestTransaction.timestamp;
+
+        if (currentTime - latestTimestamp <= 900) {
+          setPauseRotation(false);
+        } else {
+          setPauseRotation(true);
+        }
+      }
+
+      // setTimeout(() => {
+      //   setPauseRotation(true);
+      // }, 20000);
     } catch (error) {
-      console.error('Error fetching initial transactions:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error("Error fetching initial transactions:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       setError(`Failed to load transactions: ${errorMessage}`);
-      setPauseRotation(true)
+      setPauseRotation(true);
     } finally {
       setIsLoading(false);
     }
@@ -85,42 +104,42 @@ const RecentInputs = () => {
 
   useEffect(() => {
     if (!pusher) {
-      console.error('❌ Pusher not initialized');
+      console.error("❌ Pusher not initialized");
       return;
     }
 
     // Initialize Pusher with debug logging
     Pusher.logToConsole = true;
-    console.log('🚀 Initializing Pusher connection');
+    console.log("🚀 Initializing Pusher connection");
 
     // Subscribe to the transactions channel
-    console.log('📡 Subscribing to transactions channel');
-    const channel = pusher.subscribe('transactions');
-    
+    console.log("📡 Subscribing to transactions channel");
+    const channel = pusher.subscribe("transactions");
+
     // Handle connection state
-    pusher.connection.bind('connected', () => {
-      console.log('🔌 Pusher connected');
+    pusher.connection.bind("connected", () => {
+      console.log("🔌 Pusher connected");
       setIsConnected(true);
       setError(null);
     });
 
-    pusher.connection.bind('connecting', () => {
-      console.log('🔄 Pusher connecting...');
+    pusher.connection.bind("connecting", () => {
+      console.log("🔄 Pusher connecting...");
     });
 
-    pusher.connection.bind('disconnected', () => {
-      console.log('🔌 Pusher disconnected');
+    pusher.connection.bind("disconnected", () => {
+      console.log("🔌 Pusher disconnected");
       setIsConnected(false);
     });
 
-    pusher.connection.bind('error', (err: Error) => {
-      console.error('❌ Pusher error:', err);
-      setError('Connection error occurred');
+    pusher.connection.bind("error", (err: Error) => {
+      console.error("❌ Pusher error:", err);
+      setError("Connection error occurred");
     });
 
     // Listen for new transactions
-    channel.bind('new-transaction', (transaction: Transaction) => {
-      console.log('📥 New transaction received:', transaction);
+    channel.bind("new-transaction", (transaction: Transaction) => {
+      console.log("📥 New transaction received:", transaction);
       transactionsCache = [transaction, ...transactionsCache].slice(0, 50);
       setTransactions(transactionsCache);
     });
@@ -132,7 +151,7 @@ const RecentInputs = () => {
     return () => {
       if (pusher) {
         channel.unbind_all();
-        pusher.unsubscribe('transactions');
+        pusher.unsubscribe("transactions");
       }
     };
   }, [fetchInitialTransactions, pusher]);
@@ -142,30 +161,30 @@ const RecentInputs = () => {
       const now = Date.now();
       const diff = now - timestamp * 1000;
       const seconds = Math.floor(diff / 1000);
-      
-      if (seconds < 60) return 'Just now';
-      
+
+      if (seconds < 60) return "Just now";
+
       const minutes = Math.floor(seconds / 60);
-      if (minutes === 1) return '1 minute ago';
+      if (minutes === 1) return "1 minute ago";
       if (minutes < 60) return `${minutes} minutes ago`;
-      
+
       const hours = Math.floor(minutes / 60);
-      if (hours === 1) return '1 hour ago';
+      if (hours === 1) return "1 hour ago";
       if (hours < 24) return `${hours} hours ago`;
-      
+
       const days = Math.floor(hours / 24);
-      if (days === 1) return '1 day ago';
+      if (days === 1) return "1 day ago";
       if (days < 7) return `${days} days ago`;
-      
+
       return new Date(timestamp * 1000).toLocaleDateString();
     } catch (error) {
-      console.error('Error formatting time:', error);
-      return 'Invalid time';
+      console.error("Error formatting time:", error);
+      return "Invalid time";
     }
   }, []);
 
   const openInExplorer = useCallback((signature: string) => {
-    window.open(`https://solscan.io/tx/${signature}`, '_blank');
+    window.open(`https://solscan.io/tx/${signature}`, "_blank");
   }, []);
 
   // Update times every minute
@@ -178,12 +197,12 @@ const RecentInputs = () => {
   }, []);
 
   const shortenAddress = useCallback((address: string) => {
-    if (!address) return 'Unknown';
+    if (!address) return "Unknown";
     try {
       return `${address.slice(0, 4)}..${address.slice(-4)}`;
     } catch (error) {
-      console.error('Error shortening address:', error);
-      return 'Invalid address';
+      console.error("Error shortening address:", error);
+      return "Invalid address";
     }
   }, []);
 
@@ -191,8 +210,8 @@ const RecentInputs = () => {
     try {
       return amount.toFixed(2);
     } catch (error) {
-      console.error('Error formatting amount:', error);
-      return '0.00';
+      console.error("Error formatting amount:", error);
+      return "0.00";
     }
   }, []);
 
@@ -208,7 +227,7 @@ const RecentInputs = () => {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-white">
         <p className="text-red-400 mb-4">{error}</p>
-        <button 
+        <button
           onClick={fetchInitialTransactions}
           className="px-4 py-2 bg-white-0.1 rounded-lg hover:bg-white-0.2 transition-colors"
         >
@@ -255,15 +274,17 @@ const RecentInputs = () => {
                 </tr>
               ) : (
                 transactions.map((transaction) => (
-                  <tr 
-                    key={transaction.signature} 
+                  <tr
+                    key={transaction.signature}
                     className="text-white tracking-[2.5%] text-sm hover:bg-white-0.05 rounded-lg transition-colors cursor-pointer"
                     onClick={() => openInExplorer(transaction.signature)}
                   >
                     <td className="pl-4 py-3">
                       <div className="flex flex-col">
                         <span>{formatTime(transaction.timestamp)}</span>
-                        <span className="text-white-0.4 text-xs">{transaction.type || 'Unknown'}</span>
+                        <span className="text-white-0.4 text-xs">
+                          {transaction.type || "Unknown"}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3">
