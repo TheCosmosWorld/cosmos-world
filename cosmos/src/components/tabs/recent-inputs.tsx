@@ -67,7 +67,12 @@ const RecentInputs = () => {
       const data = await response.json();
       transactionsCache = data;
       setTransactions(data);
-      setPauseRotation(false)
+      setPauseRotation(false);
+
+      setTimeout(() => {
+        setPauseRotation(true);
+      }, 10000);
+
     } catch (error) {
       console.error('Error fetching initial transactions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
